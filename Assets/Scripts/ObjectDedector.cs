@@ -5,12 +5,8 @@ using UnityEngine;
 public class ObjectDedector : MonoBehaviour
 {
     public Camera mainCamera;
-    public int horizontalRays = 10;
-    public int verticalRays = 10;
-    public float maxDistance = 100f;
-
-    private HashSet<GameObject> seenObjects = new HashSet<GameObject>();
     private GUIStyle guiStyle = new GUIStyle(); // GUIStyle oluþtur
+    private List<GameObject> seenObjects = new List<GameObject>();
 
     void Start()
     {
@@ -18,30 +14,25 @@ public class ObjectDedector : MonoBehaviour
         guiStyle.fontSize = 30; // Yazý boyutunu ayarla
         guiStyle.normal.textColor = Color.white; // Yazý rengini ayarla
     }
+
     void Update()
     {
-        RaycastFromCamera();
+        takeSceneGameObjects();
         DisplaySeenObjectCount();
     }
 
-    void RaycastFromCamera()
+    void takeSceneGameObjects()
     {
-        seenObjects.Clear();
+        seenObjects.Clear(); // Clear the list to avoid counting the same objects multiple times
+        GameObject[] allObjects = FindObjectsOfType<GameObject>();
+        Plane[] frustumPlanes = GeometryUtility.CalculateFrustumPlanes(mainCamera);
 
-        for (int y = 0; y < verticalRays; y++)
+        foreach (GameObject obj in allObjects)
         {
-            for (int x = 0; x < horizontalRays; x++)
+            Renderer renderer = obj.GetComponent<Renderer>();
+            if (renderer != null && GeometryUtility.TestPlanesAABB(frustumPlanes, renderer.bounds))
             {
-                float u = (float)x / (horizontalRays - 1);
-                float v = (float)y / (verticalRays - 1);
-
-                Ray ray = mainCamera.ViewportPointToRay(new Vector3(u, v, 0));
-                RaycastHit hit;
-
-                if (Physics.Raycast(ray, out hit, maxDistance))
-                {
-                    seenObjects.Add(hit.collider.gameObject);
-                }
+                seenObjects.Add(obj);
             }
         }
     }
@@ -55,6 +46,6 @@ public class ObjectDedector : MonoBehaviour
     void OnGUI()
     {
         // Ekrana nesne sayýsýný yazdýrma
-        GUI.Label(new Rect(10, 10, 200, 20), "Görülen nesne sayýsý: " + seenObjects.Count, guiStyle);
+        GUI.Label(new Rect(10, 10, 300, 30), "Görülen nesne sayýsý: " + seenObjects.Count, guiStyle);
     }
 }
